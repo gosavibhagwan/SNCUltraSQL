@@ -70,7 +70,7 @@ BEGIN
 		--and PM.ClientID = '''+@StrClientId+'''
 		--and PM.Price = 3 
 		And MI.ItemType=''S''
-		and PM.MenuItemCode ='+@ServiceCode+'
+		and PM.MenuItemCode ='''+@ServiceCode+'''
 		and (PM.FromDate <= convert(datetime,'''+@POSDate+''') and (PM.ToDate >=  convert(datetime,'''+@POSDate+''') OR PM.ToDate =  cast(''12/31/9999'' as datetime)) )
 	order by PM.CreatedDate')
 
@@ -262,7 +262,7 @@ BEGIN
 		inner join TblPOSMst PM on RM.POSCode=PM.POSCode
 		Where MI.ItemType='s' 
 			and RM.POSCode=@POSCode
-			and ((PM.POSDate between RM.FromDate and RM.ToDate ) OR (RM.ToDate = '12/31/9999')) 
+			and ((PM.POSDate between RM.FromDate and RM.ToDate )) 
 	END
 	ELSE
 	BEGIN
@@ -645,7 +645,7 @@ BEGIN
   SET @ProformaInvoiceId=@StrLocProformaInvNo  
     
   select * from #TblServiceDetails  
-  DECLARE @IntPubCode INT  
+  DECLARE @IntPubCode varchar(100)  
   DECLARE @IntPubQuantity INT  
   DECLARE @BlnPubChargeable bit  
   DECLARE @DecPubRate decimal  
@@ -799,7 +799,7 @@ BEGIN
       DECLARE @ParmDefinitionI nvarchar(500);  
       
     select @IntPubCode  
-      IF isnull(@IntPubCode,0)>0  
+      IF(isnull(@IntPubCode,'0'))<>'0'
       BEGIN   
       Print('BBB')    
        SET @ParmDefinitionI = ' @AmdCodeFinal nvarchar(10)';  
@@ -953,7 +953,7 @@ BEGIN
       DECLARE @ParmDefinitionIPI nvarchar(500);  
       
       
-      IF isnull(@IntPubCode,0)>0  
+      IF(isnull(@IntPubCode,'0'))<>'0'
       BEGIN     
        SET @ParmDefinitionIPI = ' @AmdCodeFinal nvarchar(10)';  
        EXECUTE sp_executesql  @StrQueryPartialInsertPI,@ParmDefinitionIPI,@AmdCodeFinal=@AmdCodeFinal  
@@ -1038,7 +1038,7 @@ BEGIN
         '  
         
       DECLARE @ParmDefinitionIPITemp nvarchar(500);         
-      IF isnull(@IntPubCode,0)>0  
+      IF(isnull(@IntPubCode,'0'))<>'0' 
       BEGIN     
        SET @ParmDefinitionIPITemp = ' @AmdCodeFinal nvarchar(10)';  
        EXECUTE sp_executesql  @StrQueryPartialInsertPITemp,@ParmDefinitionIPITemp,@AmdCodeFinal=0  

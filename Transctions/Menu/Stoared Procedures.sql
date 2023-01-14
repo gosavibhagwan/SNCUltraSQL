@@ -42,8 +42,9 @@ BEGIN
 		FROM 
 			SNC.TblMenuWizard MW
 			Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=MW.MenuHeadCode And MH.POSCode=MW.POSCode
-			Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode
-			Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode
+			inner join TblMenuHeadMainMst MHM ON MHM.MenuHeadCode=MH.MenuHeadCode and MHM.isActive=1
+			Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode And MSG.IsActive=1
+			Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode and MG.IsActive=1
 		WHERE 
 			MW.POSCode=@POSCode ANd MW.BanquetItemCode=@BanquetItemCode
 	END
@@ -58,8 +59,9 @@ BEGIN
 		FROM 
 			SNC.TblMenuWizard MW
 			Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=MW.MenuHeadCode And MH.POSCode=MW.POSCode
-			Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode
-			Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode
+			inner join TblMenuHeadMainMst MHM ON MHM.MenuHeadCode=MH.MenuHeadCode and MHM.isActive=1
+			Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode And MSG.IsActive=1
+			Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode and MG.IsActive=1
 		WHERE 
 			MW.POSCode=@POSCode 
 	END
@@ -90,9 +92,13 @@ BEGIN
 	FROM 
 		SNC.TblMenuWizard MW 
 		inner join SNC.TblBanquetItemMst BI ON MW.BanquetItemCode=BI.BanquetItemCode
+		Inner join TblRateMst RM on RM.MenuItemCode=Convert(varchar(max),BI.BanquetItemCode)
+		inner join TblPOSMst PM on RM.POSCode=PM.POSCode
 	Where 
-		MW.POSCode=@POSCode	
+		MW.POSCode=@POSCode
+		AND ((PM.POSDate between RM.FromDate and RM.ToDate )) 	
 END
+
 GO
 
 IF EXISTS(SELECT * FROM sysobjects WHERE type='P' AND name='SprSNCMenuPreRequisities')        
@@ -139,7 +145,7 @@ BEGIN
 	BEGIN
 		SET @StrQuerySelect='		
 		Select case When TBI.banquetItemId=''A1LC'' then ''A-la-Carte'' else BI.BanquetItemName end as BanquetItemName,isnull(BI.IncomeHeadCode,0) as IncomeHeadCode,TBI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblMenuBanquetItem_'+ltrim(rtrim(@POSCode))+'] TBI Left Outer join SNC.TblBanquetItemMst BI ON TBI.BanquetItemId=convert(varchar(24),BI.BanquetItemCode) where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +'
-		Select MI.MenuItemDescription,MI.IncomeHeadCode,MI.UnitCode,UM.UnitDescription,MW.OrderBy,Case when MW.MenuHeadCode<>0 then ''MH-''+MH.MenuHeadDescription Else case when MW.MenuGroupCode<>0 Then ''MG-''+MG.MenuGroupDescription else ''MSG-''+MSG.MenuSubGroupDescription end ENd as MH_MG_MSG_Description,TMI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblMenuItem_'+ltrim(rtrim(@POSCode))+'] TMI Inner Join TblMenuItemMst MI On TMI.MenuItemCode=MI.MenuItemCode inner join TblUnitOfMeasureMst UM ON UM.UnitCode=MI.UnitCode  inner join SNC.TblMenuWizard MW ON TMI.BanquetItemId=convert(varchar,MW.BanquetItemCode) And TMI.MenuHeadCode=(case when MW.MenuHeadCode <>0 then MW.MenuHeadCode else Case when MW.MenuGroupCode<>0 then MW.MenuGroupCode Else MW.MenuSubGroupCode end end) And TMI.MenuHeadType=(case when MW.MenuHeadCode <>0 then 1 else Case when MW.MenuGroupCode<>0 then 2 Else 3 end end) Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=MW.MenuHeadCode And MH.POSCode=MW.POSCode	Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode             where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +'
+		Select MI.MenuItemDescription,MI.IncomeHeadCode,MI.UnitCode,UM.UnitDescription,MW.OrderBy,Case when MW.MenuHeadCode<>0 then ''MH-''+MH.MenuHeadDescription Else case when MW.MenuGroupCode<>0 Then ''MG-''+MG.MenuGroupDescription else ''MSG-''+MSG.MenuSubGroupDescription end ENd as MH_MG_MSG_Description,TMI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblMenuItem_'+ltrim(rtrim(@POSCode))+'] TMI Inner Join TblMenuItemMst MI On TMI.MenuItemCode=MI.MenuItemCode inner join TblUnitOfMeasureMst UM ON UM.UnitCode=MI.UnitCode  inner join SNC.TblMenuWizard MW ON TMI.BanquetItemId=convert(varchar,MW.BanquetItemCode) And TMI.MenuHeadCode=(case when MW.MenuHeadCode <>0 then MW.MenuHeadCode else Case when MW.MenuGroupCode<>0 then MW.MenuGroupCode Else MW.MenuSubGroupCode end end) And TMI.MenuHeadType=(case when MW.MenuHeadCode <>0 then 1 else Case when MW.MenuGroupCode<>0 then 3 Else 2 end end) Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=MW.MenuHeadCode And MH.POSCode=MW.POSCode	Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode             where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +'
 		union all
 		Select MI.MenuItemDescription,MI.IncomeHeadCode,MI.UnitCode,UM.UnitDescription,9999 as OrderBy,''MH-''+MH.MenuHeadDescription,TMI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblMenuItem_06] TMI Inner Join TblMenuItemMst MI On TMI.MenuItemCode=MI.MenuItemCode inner join TblUnitOfMeasureMst UM ON UM.UnitCode=MI.UnitCode  Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=TMI.MenuHeadCode And MH.POSCode='''+@POSCode+''' where  ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +' and BanquetItemId=''A1LC''
 		union all
@@ -152,7 +158,7 @@ BEGIN
 	BEGIN
 		SET @StrQuerySelect='		
 		Select isnull(BI.BanquetItemName,'''') as BanquetItemName ,isnull(BI.IncomeHeadCode,0)as IncomeHeadCode,TBI.* From [SNC].[TblChallanMenuBanquetItem_'+ltrim(rtrim(@POSCode))+'] TBI Left Outer join SNC.TblBanquetItemMst BI ON TBI.BanquetItemId=convert(varchar(24),BI.BanquetItemCode) where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +' and ProformaInvoiceId= '''+ Convert(varchar(20),@ProformaInvoiceNo) +''' 
-		Select MI.MenuItemDescription,MI.IncomeHeadCode,MI.UnitCode,UM.UnitDescription,MW.OrderBy,Case when MW.MenuHeadCode<>0 then ''MH-''+MH.MenuHeadDescription Else case when MW.MenuGroupCode<>0 Then ''MG-''+MG.MenuGroupDescription else ''MSG-''+MSG.MenuSubGroupDescription end ENd as MH_MG_MSG_Description,TMI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblChallanMenuItem_'+ltrim(rtrim(@POSCode))+'] TMI Inner Join TblMenuItemMst MI On TMI.MenuItemCode=MI.MenuItemCode inner join TblUnitOfMeasureMst UM ON UM.UnitCode=MI.UnitCode inner join SNC.TblMenuWizard MW ON TMI.BanquetItemId=convert(nvarchar,MW.BanquetItemCode) And TMI.MenuHeadCode=(case when MW.MenuHeadCode <>0 then MW.MenuHeadCode else Case when MW.MenuGroupCode<>0 then MW.MenuGroupCode Else MW.MenuSubGroupCode end end) And TMI.MenuHeadType=(case when MW.MenuHeadCode <>0 then 1 else Case when MW.MenuGroupCode<>0 then 2 Else 3 end end) Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=MW.MenuHeadCode And MH.POSCode=MW.POSCode	Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode  where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +' and ProformaInvoiceId= '''+ Convert(varchar(20),@ProformaInvoiceNo) +'''   
+		Select MI.MenuItemDescription,MI.IncomeHeadCode,MI.UnitCode,UM.UnitDescription,MW.OrderBy,Case when MW.MenuHeadCode<>0 then ''MH-''+MH.MenuHeadDescription Else case when MW.MenuGroupCode<>0 Then ''MG-''+MG.MenuGroupDescription else ''MSG-''+MSG.MenuSubGroupDescription end ENd as MH_MG_MSG_Description,TMI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblChallanMenuItem_'+ltrim(rtrim(@POSCode))+'] TMI Inner Join TblMenuItemMst MI On TMI.MenuItemCode=MI.MenuItemCode inner join TblUnitOfMeasureMst UM ON UM.UnitCode=MI.UnitCode inner join SNC.TblMenuWizard MW ON TMI.BanquetItemId=convert(nvarchar,MW.BanquetItemCode) And TMI.MenuHeadCode=(case when MW.MenuHeadCode <>0 then MW.MenuHeadCode else Case when MW.MenuGroupCode<>0 then MW.MenuGroupCode Else MW.MenuSubGroupCode end end) And TMI.MenuHeadType=(case when MW.MenuHeadCode <>0 then 1 else Case when MW.MenuGroupCode<>0 then 3 Else 2 end end) Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=MW.MenuHeadCode And MH.POSCode=MW.POSCode	Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode  where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +' and ProformaInvoiceId= '''+ Convert(varchar(20),@ProformaInvoiceNo) +'''   
 		union all
 		Select MI.MenuItemDescription,MI.IncomeHeadCode,MI.UnitCode,UM.UnitDescription,9999 as OrderBy,''MH-''+MH.MenuHeadDescription,TMI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblChallanMenuItem_06] TMI Inner Join TblMenuItemMst MI On TMI.MenuItemCode=MI.MenuItemCode inner join TblUnitOfMeasureMst UM ON UM.UnitCode=MI.UnitCode  Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=TMI.MenuHeadCode And MH.POSCode='''+@POSCode+'''  where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +'  and BanquetItemId=''A1LC''
 		union all
@@ -165,7 +171,7 @@ BEGIN
 	BEGIN
 		SET @StrQuerySelect='		
 		Select isnull(BI.BanquetItemName,''A-la-Carte'') as BanquetItemName ,isnull(BI.IncomeHeadCode,0)as IncomeHeadCode,TBI.* From [SNC].[TblChallanMenuBanquetItemTemp_'+ltrim(rtrim(@POSCode))+'] TBI Left Outer join SNC.TblBanquetItemMst BI ON TBI.BanquetItemId=convert(varchar(24),BI.BanquetItemCode) where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +' and Guid='''+ @Guid +''' 
-		Select MI.MenuItemDescription,MI.IncomeHeadCode,MI.UnitCode,UM.UnitDescription,MW.OrderBy,Case when MW.MenuHeadCode<>0 then ''MH-''+MH.MenuHeadDescription Else case when MW.MenuGroupCode<>0 Then ''MG-''+MG.MenuGroupDescription else ''MSG-''+MSG.MenuSubGroupDescription end ENd as MH_MG_MSG_Description,TMI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblChallanMenuItemTemp_'+ltrim(rtrim(@POSCode))+'] TMI Inner Join TblMenuItemMst MI On TMI.MenuItemCode=MI.MenuItemCode inner join TblUnitOfMeasureMst UM ON UM.UnitCode=MI.UnitCode inner join SNC.TblMenuWizard MW ON TMI.BanquetItemId=convert(nvarchar,MW.BanquetItemCode) And TMI.MenuHeadCode=(case when MW.MenuHeadCode <>0 then MW.MenuHeadCode else Case when MW.MenuGroupCode<>0 then MW.MenuGroupCode Else MW.MenuSubGroupCode end end) And TMI.MenuHeadType=(case when MW.MenuHeadCode <>0 then 1 else Case when MW.MenuGroupCode<>0 then 2 Else 3 end end) Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=MW.MenuHeadCode And MH.POSCode=MW.POSCode	Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode  where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +' and Guid='''+ @Guid +''' 
+		Select MI.MenuItemDescription,MI.IncomeHeadCode,MI.UnitCode,UM.UnitDescription,MW.OrderBy,Case when MW.MenuHeadCode<>0 then ''MH-''+MH.MenuHeadDescription Else case when MW.MenuGroupCode<>0 Then ''MG-''+MG.MenuGroupDescription else ''MSG-''+MSG.MenuSubGroupDescription end ENd as MH_MG_MSG_Description,TMI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblChallanMenuItemTemp_'+ltrim(rtrim(@POSCode))+'] TMI Inner Join TblMenuItemMst MI On TMI.MenuItemCode=MI.MenuItemCode inner join TblUnitOfMeasureMst UM ON UM.UnitCode=MI.UnitCode inner join SNC.TblMenuWizard MW ON TMI.BanquetItemId=convert(nvarchar,MW.BanquetItemCode) And TMI.MenuHeadCode=(case when MW.MenuHeadCode <>0 then MW.MenuHeadCode else Case when MW.MenuGroupCode<>0 then MW.MenuGroupCode Else MW.MenuSubGroupCode end end) And TMI.MenuHeadType=(case when MW.MenuHeadCode <>0 then 1 else Case when MW.MenuGroupCode<>0 then 3 Else 2 end end) Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=MW.MenuHeadCode And MH.POSCode=MW.POSCode	Left outer Join TblMenuSubGroupMst MSG ON MSG.MenuSubGroupCode=MW.MenuSubGroupCode Left outer Join TblMenuGroupMst MG ON MG.MenuGroupCode=MW.MenuGroupCode  where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +' and Guid='''+ @Guid +''' 
 		union all
 		Select MI.MenuItemDescription,MI.IncomeHeadCode,MI.UnitCode,UM.UnitDescription,9999 as OrderBy,''MH-''+MH.MenuHeadDescription,TMI.*,'''' as ProformaInvoiceId,'''' as Status,0 as TaxAmt,'''' as TaxStr,0 as Rate,0 as Discount,0 as Qty From [SNC].[TblChallanMenuItemTemp_06] TMI Inner Join TblMenuItemMst MI On TMI.MenuItemCode=MI.MenuItemCode inner join TblUnitOfMeasureMst UM ON UM.UnitCode=MI.UnitCode  Left outer Join TblMenuHeadMst MH ON MH.MenuHeadCode=TMI.MenuHeadCode And MH.POSCode='''+@POSCode+'''  where ReservationId= '+ convert(varchar(50),@ReservationId) +'and DayId= '+ Convert(varchar(20),@DayId) +' and BanquetItemId=''A1LC'' and Guid='''+ @Guid +''' 
 		union all
@@ -222,7 +228,9 @@ BEGIN
 		Select distinct convert(varchar,isnull(cm.BanquetItemCode,0)),isnull(a.MenuItemDescription,'''') as MenuItemDescription,  CONVERT(VARCHAR,a.MenuItemCode) AS Code ,a.TouchDescription as ItemDetail, 
 						isnull(cm.Costincurredperunit,0) as Cost , 
 						''No'' As Modifier  ,
-						c.'+@StrLocFunDayOfWeek+' as Rate ,''Cover''=isnull(com.CoversCateredPerPortion,1), 
+						c.'+@StrLocFunDayOfWeek+' as Rate ,
+						''Cover''=1,
+						--''Cover''=isnull(com.CoversCateredPerPortion,1), 
 						c.Ratecode as ItemRateId, u.UnitDescription as Unit , u.UnitCode,a.IncomeHeadCode
 						,LTRIM(RTRIM(CASE CONVERT(FLOAT,c.FixedCost) WHEN 0 THEN ''P'' ELSE ''A'' END)) AS CostType
 						,c.CostCenterCode as CostCenterCodes,''0'' as IsFreeFlow,1 as  MH_MG_MSG_Type
@@ -230,7 +238,7 @@ BEGIN
 							 inner join TblRateMst  c on c.MenuItemCode =a.MenuItemCode
 							 inner join TblunitofMeasureMst u on u.UnitCode =a.UnitCode
 							 Left outer join SNC.TblMenuHeadCostMatrix cm on cm.MenuHdCode=c.MenuHeadCode
-							 Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode
+							-- Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode
 						where c.TypeCode=''3'' 
 							 and (('''+@POSDate+''' between c.FromDate and c.ToDate ) OR (c.ToDate = ''01/01/1900'')) 
 							 and c.POSCode='''+@POSCode+'''
@@ -239,20 +247,22 @@ BEGIN
 		Select   convert(varchar,isnull(cm.BanquetItemCode,0)),isnull(FreeFlowMenuItemName,'''') as Name ,  + ''F'' +CONVERT(VARCHAR, FreeFlowMenuItemId) As Code ,'''' As ItemDetail ,
 				isnull(cm.Costincurredperunit,0) as Cost ,  
 				''No'' As Modifier, 0 as Rate ,
-				''Cover''=isnull(com.CoversCateredPerPortion,1),
+				''Cover''=1,
+				--''Cover''=isnull(com.CoversCateredPerPortion,1),
 				''0'' as ItemRateId, ISNULL(u.UnitDescription,'''') as  Unit, u.UnitCode,1 as IncomeHeadCode
 				,''A''AS CostType,0 as CostCenterCodes,''1'' as IsFreeFlow,1 as MH_MG_MSG_Type
 				from SNC.TblFreeFlowMenuItemMst f			
 				left outer join TblunitofMeasureMst u on UnitMeasureCode=u.UnitCode  
 				Left outer join SNC.TblMenuHeadCostMatrix cm on cm.MenuHdCode=f.MenuHead 
-				Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=f.MenuHead
+				--Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=f.MenuHead
 				where   Active <> 0
 	Union All
 
 		Select distinct  convert(varchar,isnull(cm.BanquetItemCode,0)),isnull(a.MenuItemDescription,'''') as MenuItemDescription, a.MenuItemCode ,a.TouchDescription, 
 		isnull(cm.Costincurredperunit,0) as Cost ,  
 		''No'' As Modifier  , c.'+@StrLocFunDayOfWeek+' as Rate ,
-		''Cover''=isnull(com.CoversCateredPerPortion,1),
+		''Cover''=1,
+		--''Cover''=isnull(com.CoversCateredPerPortion,1),
 		c.Ratecode as ItemRateId, u.UnitDescription as Unit , u.UnitCode,a.IncomeHeadCode
 		,LTRIM(RTRIM(CASE CONVERT(FLOAT,c.FixedCost) WHEN 0 THEN ''P'' ELSE ''A'' END)) AS CostType
 		,c.CostCenterCode as CostCenterCodes,''0'' as IsFreeFlow,2 as MH_MG_MSG_Type
@@ -260,7 +270,7 @@ BEGIN
 			inner join TblRateMst  c on c.MenuItemCode=a.MenuItemCode
 			inner join TblunitofMeasureMst u on u.UnitCode =a.UnitCode
 			Left outer join SNC.TblMenuHeadCostMatrix cm on cm.MenuHdCode=c.MenuHeadCode 
-			Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode 
+			--Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode 
 		where  c.TypeCode=''3''
 				  and a.UnitCode = u.UnitCode 
 				  and a.MenuSubGroupCode  in (select MenuSubGroupCode  from TblMenuSubGroupMst) 
@@ -271,7 +281,8 @@ BEGIN
 		select distinct  convert(varchar,isnull(cm.BanquetItemCode,0)),isnull(a.MenuItemDescription,'''') as MenuItemDescription, a.MenuItemCode ,a.TouchDescription, 
 		isnull(cm.Costincurredperunit,0) as Cost ,  
 		''No'' As Modifier  , c.'+@StrLocFunDayOfWeek+' as Rate ,
-		''Cover''=isnull(com.CoversCateredPerPortion,1),
+		''Cover''=1,
+		--''Cover''=isnull(com.CoversCateredPerPortion,1),
 		c.Ratecode as ItemRateId, u.UnitDescription as Unit , u.UnitCode,a.IncomeHeadCode 
 		,LTRIM(RTRIM(CASE CONVERT(FLOAT,c.FixedCost) WHEN 0 THEN ''P'' ELSE ''A'' END)) AS CostType
 		,c.CostCenterCode as CostCenterCodes,''0'' as IsFreeFlow,3 as MH_MG_MSG_Type
@@ -279,7 +290,7 @@ BEGIN
 			inner join TblRateMst  c on c.MenuItemCode=a.MenuItemCode
 			inner join TblunitofMeasureMst u on u.UnitCode =a.UnitCode
 			Left outer join SNC.TblMenuHeadCostMatrix cm on cm.MenuHdCode=c.MenuHeadCode 
-			Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode
+			--Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode
 		 where c.TypeCode=''3''				 
 				 and (('''+@POSDate+''' between c.FromDate and c.ToDate ) OR (c.ToDate = ''01/01/1900'')) 
 				 and c.POSCode='''+@POSCode+'''
@@ -428,7 +439,9 @@ BEGIN
 		Exec('Select distinct a.MenuItemDescription,  CONVERT(VARCHAR,a.MenuItemCode) AS Code ,a.TouchDescription as ItemDetail, 
 						isnull(cm.Costincurredperunit,0) as Cost , 
 						''No'' As Modifier  ,
-						c.'+@StrLocFunDayOfWeek+' as Rate ,''Cover''=isnull(com.CoversCateredPerPortion,1), 
+						c.'+@StrLocFunDayOfWeek+' as Rate ,
+						''Cover''=1,
+						--''Cover''=isnull(com.CoversCateredPerPortion,1), 
 						c.Ratecode as ItemRateId, u.UnitDescription as Unit , u.UnitCode,a.IncomeHeadCode,MW.OrderBy
 						,LTRIM(RTRIM(CASE CONVERT(FLOAT,c.FixedCost) WHEN 0 THEN ''P'' ELSE ''A'' END)) AS CostType
 						,c.CostCenterCode as CostCenterCodes,''0'' as IsFreeFlow
@@ -437,7 +450,7 @@ BEGIN
 							 inner join TblRateMst  c on c.MenuItemCode =a.MenuItemCode
 							 inner join TblunitofMeasureMst u on u.UnitCode =a.UnitCode
 							 Left outer join SNC.TblMenuHeadCostMatrix cm on cm.MenuHdCode=c.MenuHeadCode and cm.BanquetItemCode='''+@BanquetItemCode+'''
-							 Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode and com.BanquetItemCode='''+@BanquetItemCode+'''
+							 --Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode and com.BanquetItemCode='''+@BanquetItemCode+'''
 						where c.TypeCode=''3'' --and c.Category = ''2''
 							 and (('''+@POSDate+''' between c.FromDate and c.ToDate ) OR (c.ToDate = ''01/01/1900'')) 
 							 and c.POSCode='''+@POSCode+''' and c.MenuHeadCode='''+@MH_MG_MSG_Code+'''
@@ -446,21 +459,23 @@ BEGIN
 		Select  FreeFlowMenuItemName as Name ,  + ''F'' +CONVERT(VARCHAR, FreeFlowMenuItemId) As Code ,'''' As ItemDetail ,
 				isnull(cm.Costincurredperunit,0) as Cost ,  
 				''No'' As Modifier, 0 as Rate ,
-				''Cover''=isnull(com.CoversCateredPerPortion,1),
+				''Cover''=1,
+				--''Cover''=isnull(com.CoversCateredPerPortion,1),
 				''0'' as ItemRateId, ISNULL(u.UnitDescription,'''') as  Unit, u.UnitCode,1 as IncomeHeadCode,9999 as  OrderBy
 				,''A''AS CostType,0 as CostCenterCodes,''1'' as IsFreeFlow
 				from SNC.TblFreeFlowMenuItemMst f			
 				left outer join TblunitofMeasureMst u on UnitMeasureCode=u.UnitCode  
 				Left outer join SNC.TblMenuHeadCostMatrix cm on cm.MenuHdCode=f.MenuHead and cm.BanquetItemCode='''+@BanquetItemCode+'''
-				Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=f.MenuHead and com.BanquetItemCode='''+@BanquetItemCode+'''
+				--Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=f.MenuHead and com.BanquetItemCode='''+@BanquetItemCode+'''
 				where  MenuHead ='''+@MH_MG_MSG_Code+''' and Active <> 0')
 	End
 	Else If @MH_MG_MSG_Type=3 --MenuGroup
 	Begin
-		EXEC('Select distinct a.MenuItemDescription, a.MenuItemCode ,a.TouchDescription, 
+		EXEC('Select distinct a.MenuItemDescription, a.MenuItemCode as Code ,a.TouchDescription As ItemDetail, 
 		isnull(cm.Costincurredperunit,0) as Cost ,  
 		''No'' As Modifier  , c.'+@StrLocFunDayOfWeek+' as Rate ,
-		''Cover''=isnull(com.CoversCateredPerPortion,1),
+		''Cover''=1,
+		--''Cover''=isnull(com.CoversCateredPerPortion,1),
 		c.Ratecode as ItemRateId, u.UnitDescription as Unit , u.UnitCode,a.IncomeHeadCode ,MW.OrderBy
 		,LTRIM(RTRIM(CASE CONVERT(FLOAT,c.FixedCost) WHEN 0 THEN ''P'' ELSE ''A'' END)) AS CostType
 		,c.CostCenterCode as CostCenterCodes,''0'' as IsFreeFlow
@@ -469,7 +484,7 @@ BEGIN
 			inner join TblRateMst  c on c.MenuItemCode=a.MenuItemCode
 			inner join TblunitofMeasureMst u on u.UnitCode =a.UnitCode
 			Left outer join SNC.TblMenuHeadCostMatrix cm on cm.MenuHdCode=c.MenuHeadCode and cm.BanquetItemCode='''+@BanquetItemCode+'''
-			Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode and com.BanquetItemCode='''+@BanquetItemCode+'''
+			--Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode and com.BanquetItemCode='''+@BanquetItemCode+'''
 		where  c.TypeCode=''3'' --and c.Category = ''2'' 
 				  and a.UnitCode = u.UnitCode 
 				  and a.MenuSubGroupCode  in (select MenuSubGroupCode  from TblMenuSubGroupMst  where MenuGroupCode = '''+@MH_MG_MSG_Code+''') 
@@ -478,10 +493,11 @@ BEGIN
 	End
 	Else If @MH_MG_MSG_Type =2 --MenuSubGroup
 	Begin
-		EXEC('select distinct a.MenuItemDescription, a.MenuItemCode ,a.TouchDescription, 
+		EXEC('select distinct a.MenuItemDescription, a.MenuItemCode as Code ,a.TouchDescription As ItemDetail, 
 		isnull(cm.Costincurredperunit,0) as Cost ,  
 		''No'' As Modifier  , c.'+@StrLocFunDayOfWeek+' as Rate ,
-		''Cover''=isnull(com.CoversCateredPerPortion,1),
+		''Cover''=1,
+		--''Cover''=isnull(com.CoversCateredPerPortion,1),
 		c.Ratecode as ItemRateId, u.UnitDescription as Unit , u.UnitCode,a.IncomeHeadCode ,9999 as  OrderBy
 		,LTRIM(RTRIM(CASE CONVERT(FLOAT,c.FixedCost) WHEN 0 THEN ''P'' ELSE ''A'' END)) AS CostType
 		,c.CostCenterCode as CostCenterCodes,''0'' as IsFreeFlow
@@ -490,7 +506,7 @@ BEGIN
 			inner join TblRateMst  c on c.MenuItemCode=a.MenuItemCode
 			inner join TblunitofMeasureMst u on u.UnitCode =a.UnitCode
 			Left outer join SNC.TblMenuHeadCostMatrix cm on cm.MenuHdCode=c.MenuHeadCode and cm.BanquetItemCode='''+@BanquetItemCode+'''
-			Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode and com.BanquetItemCode='''+@BanquetItemCode+'''
+			--Left outer join SNC.TblMenuHeadCoverMatrix com on com.MenuHdCode=c.MenuHeadCode and com.BanquetItemCode='''+@BanquetItemCode+'''
 		 where c.TypeCode=''3'' --and c.Category = ''2'' 
 				 and a.MenuSubGroupCode ='''+@MH_MG_MSG_Code+'''
 				 and (('''+@POSDate+''' between c.FromDate and c.ToDate ) OR (c.ToDate = ''01/01/1900'')) 
@@ -547,8 +563,8 @@ BEGIN
 	DECLARE @DblLocCalculatedPrice Decimal
 	DECLARE @DblLocCalculatedCost Decimal
 	DECLARE @BanquetItemId varchar (24)
-	DECLARE @MenuHeadCode int
-	DECLARE @MenuItemCode int
+	DECLARE @MenuHeadCode varchar(100)
+	DECLARE @MenuItemCode varchar(100)
 	
 	CREATE TABLE #TblReservationDetails 
 	(

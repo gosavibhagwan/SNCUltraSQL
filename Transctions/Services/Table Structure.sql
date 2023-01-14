@@ -209,6 +209,30 @@ CREATE TABLE [SNC].[TblMenuServiceOrder_<PCODE>](
 end
 GO
 
+if not exists(select * from SNC.TblSNCTableStructure where QueryName ='TblProvisionalFP_Amd_<PCODE>')
+begin
+insert into snc.TblSNCTableStructure (QueryName,QueryString,QueryType)values('TblProvisionalFP_Amd_<PCODE>','
+CREATE TABLE [SNC].[TblProvisionalFP_Amd_<PCODE>](
+	[Code] [int] IDENTITY(1,1) NOT NULL,
+	[FPNo] [int] NOT NULL,
+	[AmdNo] [int] NOT NULL,
+	[ReservationId] [varchar](24) NOT NULL,
+	[DayId] [varchar](3) NOT NULL,
+	[MenuAmdCode] [varchar](10) NOT NULL,
+	[ServiceAmdCode] [varchar](10) NOT NULL,
+	[BillingInstAmdCode] [varchar](10) NOT NULL,
+	[StaffingAmdCode] [varchar](10) NOT NULL,
+	[OtherInfoAmdCode] [varchar](10) NOT NULL,
+	[EquipmentAmdCode] [varchar](10) NOT NULL,
+	[SeatingAmdCode] [varchar](10) NOT NULL,
+	[BanquetInfoAmdCode] [varchar](10) NOT NULL,
+	[FunctionBoardAmdCode] [varchar](10) NOT NULL,
+	[CreatedBy] [varchar](6) NOT NULL,
+	[CreatedDate] [datetime] NOT NULL
+) ON [PRIMARY]', 1)
+end
+GO
+
 
 DECLARE @propertycode varchar(5),
         @str varchar(500),
@@ -552,3 +576,47 @@ DECLARE d_cursor CURSOR FOR select Trim(POSCode) from Tblposmst where PosStyle='
                 DEALLOCATE d_cursor
 GO
 
+DECLARE @propertycode varchar(5),
+        @str varchar(500),
+        @QueryString VARCHAR(MAX),
+        @QueryString1 VARCHAR(MAX),
+        @QueryString2 VARCHAR(MAX),
+		@ExcQuery VARCHAR(MAX)=''
+  
+SET @QueryString ='
+IF NOT EXISTS (SELECT * FROM Sysobjects WHERE xtype=''U'' AND [name]=N''TblProvisionalFP_Amd_<POSCode>'')
+BEGIN
+CREATE TABLE [SNC].[TblProvisionalFP_Amd_<POSCode>](
+	[Code] [int] IDENTITY(1,1) NOT NULL,
+	[FPNo] [int] NOT NULL,
+	[AmdNo] [int] NOT NULL,
+	[ReservationId] [varchar](24) NOT NULL,
+	[DayId] [varchar](3) NOT NULL,
+	[MenuAmdCode] [varchar](10) NOT NULL,
+	[ServiceAmdCode] [varchar](10) NOT NULL,
+	[BillingInstAmdCode] [varchar](10) NOT NULL,
+	[StaffingAmdCode] [varchar](10) NOT NULL,
+	[OtherInfoAmdCode] [varchar](10) NOT NULL,
+	[EquipmentAmdCode] [varchar](10) NOT NULL,
+	[SeatingAmdCode] [varchar](10) NOT NULL,
+	[BanquetInfoAmdCode] [varchar](10) NOT NULL,
+	[FunctionBoardAmdCode] [varchar](10) NOT NULL,
+	[CreatedBy] [varchar](6) NOT NULL,
+	[CreatedDate] [datetime] NOT NULL
+) ON [PRIMARY]
+End'  
+DECLARE d_cursor CURSOR FOR select Trim(POSCode) from Tblposmst where PosStyle='7' order by POSCODE 
+                OPEN d_cursor  
+                FETCH NEXT FROM d_cursor INTO @propertycode
+                WHILE @@FETCH_STATUS = 0  
+                BEGIN          
+                        SET @QueryString1 = replace(@QueryString,'<POSCode>',@propertycode)                                        
+                        SET @QueryString2 = replace(@QueryString1,'{','''')                                
+                        SET quoted_identifier off
+                        print(@QueryString2)
+                        EXEC(@QueryString2)
+                        FETCH NEXT FROM d_cursor INTO @propertycode
+                END
+                CLOSE d_cursor  
+                DEALLOCATE d_cursor
+GO
